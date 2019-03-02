@@ -65,10 +65,16 @@ int main(void)
 
 int myfd = 0, bytesread; 
 
-char buf[BUFF_SIZE + 1] = {'\0'};
+char *buf;
+char ** p_buf;
+
+
 
 int i = 0;
 char c;
+unsigned int capacity = 2;
+buf = (char *)ft_memalloc(sizeof(char)*capacity);
+*p_buf = buf;
 
 while (1)
 {
@@ -79,7 +85,9 @@ while (1)
     	printf("exit - char %c, i - %d\n", c, i);
         break ;
     }
-
+ 
+    
+    capacity = check_update_mem_capacity(p_buf, i, capacity);
     buf[i] = c;
     printf("write - char %c, i - %d\n", c, i);
     i++;
@@ -91,14 +99,24 @@ return 0;
 
 }
 
+int check_update_mem_capacity(char **p_buf, unsigned int csize, unsigned int capacity)
+{
+    char * new;
 
-// int capacity = 2;
+    if (capacity == csize - 1)
+    {
+        capacity = capacity * 2;
+        new =  (char *)ft_memalloc(capacity);
+        if (!new)
+            return 0;
+        new = ft_memmove(new, *p_buf, ft_strlen(p_buf));
+        ft_memdel(p_buf);
+        *p_buf = new;
+    }
+    
+    return capacity;
+}
 
-// if (capacity == size - 1)
-// {
-//     new = malloc(capacity * 2);
-//     memmove(old, new, sizeof(old));
-// }
 
 
 
