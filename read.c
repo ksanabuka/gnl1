@@ -1,120 +1,49 @@
 
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#ifndef BUFF_SIZE
-#define BUFF_SIZE 32
-#endif
-#include "libft.h"
-//reading from file;
+#include "gnl.h"
 
-// int main(void)
-// {
-
-// int fd, bytesread;
-
-
-// char buf[BUFF] = {'\0'};
-
-
-// fd = open("Gnl2.txt", O_RDONLY);
-
-
-// if (fd < 0)
-// {
-//     perror("Error");
-//     exit(1);
-// }
-
-// int i = 0;
-// char c;
-
-// while (1)
-// {
-//     bytesread = read(fd, &c, 1); 
-//     printf("%d - 1\n", i);
-
-
-//     if (c == '\n' || bytesread < 1 || i > size - 1)
-//     {
-//     	printf("%d - 2\n", i);
-//         break ;
-//     }
-
-//     buf[i] = c;
-//     printf("%d - 3\n", i);
-
-//     i++;
-// }
-
-// buf[size - 1] = '\0';
-// printf("%s\n %d\n", buf, bytesread);
-// return 0;
-
-// }
-
-// reading from stdin
-
-
-
-
-int main(void)
-{
-
-int myfd = 0, bytesread; 
-
-char *buf;
-char ** p_buf;
-
-
-
-int i = 0;
-char c;
-unsigned int capacity = 2;
-buf = (char *)ft_memalloc(sizeof(char)*capacity);
-*p_buf = buf;
-
-while (1)
-{
-   bytesread = read(myfd, &c, 1); 
-
-    if (bytesread < 1 || i > BUFF_SIZE - 1)
-    {
-    	printf("exit - char %c, i - %d\n", c, i);
-        break ;
-    }
- 
-    
-    capacity = check_update_mem_capacity(p_buf, i, capacity);
-    buf[i] = c;
-    printf("write - char %c, i - %d\n", c, i);
-    i++;
-}
-
-buf[BUFF_SIZE] = '\0';
-printf("%s\n", buf);
-return 0;
-
-}
-
-int check_update_mem_capacity(char **p_buf, unsigned int csize, unsigned int capacity)
+int check_update_mem_capacity(char **line, t_size csize, t_size capacity)
 {
     char * new;
 
-    if (capacity == csize - 1)
+    if (capacity - 1 == csize || (capacity < csize))
     {
-        capacity = capacity * 2;
+        capacity += BUFF_SIZE;
         new =  (char *)ft_memalloc(capacity);
         if (!new)
             return 0;
-        new = ft_memmove(new, *p_buf, ft_strlen(p_buf));
-        ft_memdel(p_buf);
-        *p_buf = new;
+        new = ft_memmove(new, *line, ft_strlen(*p_buf));
+        ft_memdel((void**)line);
+        *line = new;
     }
     
     return capacity;
+}
+
+int get_next_line(const int fd, char **line)
+{
+
+    int bytesread; 
+    char *buf;
+    char ** p_buf;
+    t_size i = 0;
+    char c;
+    line = &buf;
+    t_size capacity = BUFF_SIZE;
+
+    while (1)
+    {
+       bytesread = read(fd, &c, 1); 
+
+        if (bytesread < 1 || c == '\n')
+        {
+            break ;
+        }
+     
+        capacity = check_update_mem_capacity(line, i, capacity);
+        buf[i] = c;
+        i++;
+    }
+    return 0;
 }
 
 
