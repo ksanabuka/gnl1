@@ -41,19 +41,20 @@ t_fdlist *ft_create_elem(unsigned int fd)
     return newel;
 }
 
-t_fdlist *find_create_fd(t_fdlist *head, unsigned int fd)
+t_fdlist *find_create_fd(t_fdlist **head, unsigned int fd)
 {
     t_fdlist * tmp;
     t_fdlist *newel;
-
     if (!head)
+        return 0;
+    if (!*head)
     {
         newel = ft_create_elem(fd);
-        head = newel; 
+        *head = newel; 
         return newel;
     }
 
-    tmp = head;
+    tmp = *head;
     while (tmp)
         {
             if (tmp->fd == fd)
@@ -63,16 +64,18 @@ t_fdlist *find_create_fd(t_fdlist *head, unsigned int fd)
         }
     
         newel = ft_create_elem(fd);
-        newel->next = head;
-        head = newel; 
+        newel->next = *head;
+        *head = newel; 
         return newel; 
 }
 
-int read_line_from_struct_and_delit(int fd, char **line, t_fdlist * head)
+
+int read_line_from_struct_and_delit(int fd, char **line, t_fdlist ** head)
     {
         int i = 0;
         int res;
         t_fdlist *ourfile = find_create_fd(head, fd);
+        printf("here!%s\n", ourfile->content);
         if (ourfile->content == '\0')
             return -1;
         while (ourfile->content[i] != '\n' && ourfile->content[i] != '\0')
@@ -121,21 +124,20 @@ int  add_to_end(t_fdlist *file, char *buf)
     return 0;
 } 
 
-int read_from_file_into_struc(int fd, t_fdlist * file)
+int read_from_file_into_struc(int fd, t_fdlist ** head)
 {
     int bytesread; 
     char * buf;
-    char * tmp = "";
     int status;
-
-   	buf = ft_strnew(BUFF_SIZE);
- 	
- 	while (1)
- 	{
+    t_fdlist * file = find_create_fd(head, fd);
+    buf = ft_strnew(BUFF_SIZE);
+    
+    while (1)
+    {
         ft_strclr(buf);
-		bytesread = read(fd, buf, BUFF_SIZE);
- 		if (bytesread <= 0)
- 		{
+        bytesread = read(fd, buf, BUFF_SIZE);
+        if (bytesread <= 0)
+        {
             return 0;
         }
 
@@ -146,24 +148,29 @@ int read_from_file_into_struc(int fd, t_fdlist * file)
         }
 
         status = add_to_end(file, buf);
- 	}
+    }
     ft_strdel(&buf);
 }
 
+
 int get_next_line(const int fd, char **line)
 {
-    static t_fdlist * head = find_create_fd(fd);
+    static t_fdlist ** head;
+    t_fdlist * firstel;
+    head = &firstel;
+    firstel = find_create_fd(head, fd);
 
-    int malcheck = prepare(fd, &line);
+    int malcheck = prepare(fd, line);
     if (malcheck == -1)
  		return -1; 
 
     int status = read_line_from_struct_and_delit(fd, line, head);
 
     if (!*line)
-        read_from_file_write_into_struc(fd);
+    {
+        status = read_from_file_into_struc(fd, head);
         status = read_line_from_struct_and_delit(fd, line, head);
-
+    }
     return status;
      
 }
@@ -171,9 +178,16 @@ int get_next_line(const int fd, char **line)
 
 int main (void)
 {
-    char ** line = 0;
+    char * buf = "";
+
+    char ** line = &buf;
     int fd = open("text.txt", O_RDONLY);
     int status = get_next_line(fd, line);
+    if (status == -1)
+    {   
+        printf("status -1 \n");
+        return 0;
+    }
     printf("status: %d, string: %s", status, *line);
     return 0;
 }
