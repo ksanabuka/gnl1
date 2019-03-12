@@ -190,7 +190,7 @@ int get_next_line(const int fd, char **line)
 }
 
 
- int main(void)
+  int main(void)
 {
     int fd = open("text.txt", O_RDONLY);
     char *line; 
@@ -203,4 +203,3 @@ int get_next_line(const int fd, char **line)
 
     return 0;
 }
-
