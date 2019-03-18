@@ -1,4 +1,4 @@
-#define BUFF_SIZE 10
+#define BUFF_SIZE 100
 #include "libft.h"
 #include <stdio.h>
 #include <fcntl.h> 
@@ -106,37 +106,63 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
     int flag = 0;
     while (1)
     {
-      //  printf("%d in circle - %s\n", d, file->content);
+      printf("%d in circle - '%s'\n", d, file->content);
 
         ft_strclr(buf);
         bytesread = read(fd, buf, BUFF_SIZE);
-        if (bytesread < 0 || (bytesread == 0  && flag == 0))
+        if (bytesread < 0)
         {
-         //   printf("all string in file - %s\n", file->content);
+            printf("read Eror! all string in file - '%s'\n", file->content);
 
-            return -1;
+            return 0;
         }
+
+
+        if ((bytesread == 0  && flag == 0))
+        {
+            printf("READ Eror! all string in file - '%s'\n", file->content);
+
+            return 0;
+        }
+
+
         if (bytesread == 0 && flag == 1)
         {
-          //  printf("all string in file - %s\n", file->content);
+          printf("read=0,flag=1 - '%s'\n", file->content);
 
             return 1;
         }
         char * tmp = buf;
         if (ft_strchr(tmp, '\n'))
         {
-            status = add_to_end(file, buf);
-           // printf("Newlinesign file->c - %s\n", file->content);
+            if ((ft_strchr(tmp, '\n') && ft_strlen(tmp) == 1))
+            {
+                char *buf1 = ft_strnew(0);
+                status = add_to_end(file, buf1);
+                printf("/n && bufflen=1    file->c - '%s'\n", file->content);
 
             return 1;
-        }
+            }
+           else 
+            {
+                status = add_to_end(file, buf);
+                printf("/n   file->c - '%s'\n", file->content);
+                flag = 1;
 
+                return 1;
+            }
+        }
         status = add_to_end(file, buf);
         flag = 1;
+        printf("%d End circle - '%s'\n\n", d, file->content);
         d++;
+
+
 
     }
     ft_strdel(&buf);
+    
+    printf("%d at end of reading - '%s'\n\n", d, file->content);
     
 }
 
@@ -144,58 +170,108 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
 int read_line_from_struct_and_delit(int fd, char **line, t_fdlist ** head)
     {
         int i = 0;
+        char * rest;
         t_fdlist *ourfile = find_create_fd(head, fd);
+        
+        
         if (ourfile->content[i] == '\0')
             return -1;
+       
+
         if (ourfile->content[i] == '\n')
         {
-            i++;
+                *line = ft_strnew(0);
+                i++;
+                rest = ft_strdup(&ourfile->content[i]);
+                //ft_strdel(&ourfile->content);
+
+                ourfile->content = rest;
+                ourfile->csize = ourfile->csize - i;
+
+                if (ourfile->content[i + 1] == '\0')
+                            {
+                            //free(&ourfile->content);
+                                return -3;
+                            }
+        
+                return -2;
         }
-        while (ourfile->content[i] != '\n' && ourfile->content[i] != '\0')
+
+
+
+       while (ourfile->content[i] != '\n' && ourfile->content[i] != '\0')
         {
             i++;
         }
-        // if (ourfile->content[i] == '\n')
-        // {   
-        //     i++;
-        // }
+        
 
         if (ourfile->content[i] == '\0')
         {
-            *line = ourfile->content;
-            return 0;
-        }
-
-        else //  ourfile->content[i] == '\n'
-        {
-            //printf("!!!!%s\n", ourfile->content);
            *line = ft_strsub(ourfile->content, 0, i);
-
-            if (!line)
-                return -1;
-
-
-           i++;
-            if (ourfile->content[i] == '\0')
-            {
-              //free(&ourfile->content);
-                return -2;
-            }
-
-
-
-            char * rest = ft_strdup(ourfile->content + i);
+            rest = ft_strnew(0);
 
             //ft_strdel(&ourfile->content);
 
             ourfile->content = rest;
             ourfile->csize = ourfile->csize - i;
-          //  char * ourfil = ourfile->content;
-            //printf("ourfile %s\n",  ourfil);
-
-            return 1;
+       
+        return -4;
         }
+
+        if (ourfile->content[i] == '\n')
+        {
+           *line = ft_strsub(ourfile->content, 0, i);
+            rest = ft_strdup(ourfile->content + i + 1);
+
+            //ft_strdel(&ourfile->content);
+
+            ourfile->content = rest;
+            ourfile->csize = ourfile->csize - i - 1;
+            
+            if (ourfile->content[i + 1] && ourfile->content[i + 1] == '\0')
+            {
+              //free(&ourfile->content);
+                return -6;
+            }     
+       
+        return -5;
+        }
+
+        return 1;
+
     }
+
+        
+        // else //  ourfile->content[i] == '\n'
+        // {
+            
+        //    *line = ft_strsub(ourfile->content, 0, i);
+
+        //     if (!line)
+        //         return -1;
+
+
+        //    i++;
+           
+
+
+
+        //      rest = ft_strdup(ourfile->content + i);
+
+        //     //ft_strdel(&ourfile->content);
+
+        //     ourfile->content = rest;
+        //     ourfile->csize = ourfile->csize - i;
+             
+        //      if (ourfile->content[i] == '\0')
+        //     {
+        //       //free(&ourfile->content);
+        //         return -4;
+        //     }
+       
+        //     return 1;
+        // }
+    
 
 
 int get_next_line(const int fd, char **line)
@@ -212,7 +288,7 @@ int get_next_line(const int fd, char **line)
 
     int  status = read_from_file_into_struc(fd, &head);
 
-    if (status <= 0)
+    if (status < 0)
         return (-1);
 
     status = read_line_from_struct_and_delit(fd, line, &head);
@@ -232,11 +308,16 @@ int get_next_line(const int fd, char **line)
     int fd = open("text.txt", O_RDONLY);
     char *line; 
     
-   // int status = 0;
+   int status = 0;
+   int i = 0;
 
-    while (get_next_line(fd, &line) >= 0)
+    while (i < 10)
+    //while (status >= 0)
     {
-        printf("%s\n", line);
+
+        (status = get_next_line(fd, &line));
+        printf("status %d  -   LINE -   '%s'\n\n\n", status, line);
+        i++;
     }
    
     return 0;
