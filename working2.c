@@ -104,6 +104,8 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
 
     buf = ft_strnew(BUFF_SIZE);
     int flag = 0;
+    
+    
     while (1)
     {
       printf("%d in circle - '%s'\n", d, file->content);
@@ -114,7 +116,7 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
         {
             printf("read Eror! all string in file - '%s'\n", file->content);
 
-            return 0;
+            return -1;
         }
 
 
@@ -122,7 +124,7 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
         {
             printf("READ Eror! all string in file - '%s'\n", file->content);
 
-            return 0;
+            return -6;
         }
 
 
@@ -130,15 +132,14 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
         {
           printf("read=0,flag=1 - '%s'\n", file->content);
 
-            return 1;
+            return -5;
         }
         char * tmp = buf;
         if (ft_strchr(tmp, '\n'))
         {
             if ((ft_strchr(tmp, '\n') && ft_strlen(tmp) == 1))
             {
-                char *buf1 = ft_strnew(0);
-                status = add_to_end(file, buf1);
+                status = add_to_end(file, buf);
                 printf("/n && bufflen=1    file->c - '%s'\n", file->content);
 
             return 1;
@@ -149,7 +150,7 @@ int read_from_file_into_struc(int fd, t_fdlist ** head)
                 printf("/n   file->c - '%s'\n", file->content);
                 flag = 1;
 
-                return 1;
+                return 2;
             }
         }
         status = add_to_end(file, buf);
@@ -242,38 +243,7 @@ int read_line_from_struct_and_delit(int fd, char **line, t_fdlist ** head)
     }
 
         
-        // else //  ourfile->content[i] == '\n'
-        // {
-            
-        //    *line = ft_strsub(ourfile->content, 0, i);
-
-        //     if (!line)
-        //         return -1;
-
-
-        //    i++;
-           
-
-
-
-        //      rest = ft_strdup(ourfile->content + i);
-
-        //     //ft_strdel(&ourfile->content);
-
-        //     ourfile->content = rest;
-        //     ourfile->csize = ourfile->csize - i;
-             
-        //      if (ourfile->content[i] == '\0')
-        //     {
-        //       //free(&ourfile->content);
-        //         return -4;
-        //     }
        
-        //     return 1;
-        // }
-    
-
-
 int get_next_line(const int fd, char **line)
 {
     static t_fdlist *head;
@@ -288,17 +258,23 @@ int get_next_line(const int fd, char **line)
 
     int  status = read_from_file_into_struc(fd, &head);
 
-    if (status < 0)
+    if (status == -6 || status == -1 ) && file->content[0] == '\0')
         return (-1);
 
-    status = read_line_from_struct_and_delit(fd, line, &head);
+    if (status == -5)       
+    { 
+        status = read_line_from_struct_and_delit(fd, line, &head);
+        printf("st - %d\n", status);
 
-    // if (status == -1 || status == -2 || status == 0)
-    // {
-    //     status = read_from_file_into_struc(fd, &head);
-    //     status = read_line_from_struct_and_delit(fd, line, &head);
-    // }
-    return status;
+        status = 0;
+        return status;
+    }
+
+        status = read_line_from_struct_and_delit(fd, line, &head);
+        printf("st - %d\n", status);
+
+        status = 1;
+        return status;
 
 }
 
@@ -311,11 +287,13 @@ int get_next_line(const int fd, char **line)
    int status = 0;
    int i = 0;
 
-    while (i < 10)
-    //while (status >= 0)
+    //while (i < 10)
+    while (status >= 0)
     {
 
         (status = get_next_line(fd, &line));
+       // printf("'%s'\n", line);
+
         printf("status %d  -   LINE -   '%s'\n\n\n", status, line);
         i++;
     }
