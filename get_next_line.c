@@ -1,4 +1,44 @@
-#include  "get_next_line.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: obuksha <marvin@42.fr>                     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2019/03/25 10:00:11 by obuksha           #+#    #+#             */
+/*   Updated: 2019/03/25 10:00:17 by obuksha          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "get_next_line.h"
+
+void		delete_node(t_fdlist **head, int fd)
+{
+	t_fdlist	*node;
+	t_fdlist	*prev;
+
+	node = *head;
+	prev = *head;
+	while (node)
+	{
+		if (node->fd == fd)
+		{
+			free(node->buffer);
+			if (node == *head)
+			{
+				*head = node->next;
+			}
+			else
+			{
+				prev->next = node->next;
+			}
+			free(node);
+			break ;
+		}
+		prev = node;
+		node = node->next;
+	}
+}
 
 t_fdlist	*find_or_create(t_fdlist **list, const int fd)
 {
@@ -7,119 +47,86 @@ t_fdlist	*find_or_create(t_fdlist **list, const int fd)
 	node = *list;
 	while (node)
 	{
-		if (node->fd == (unsigned int)fd)
+		if (node->fd == fd)
 			return (node);
 		node = node->next;
 	}
 	if (!(node = (t_fdlist *)malloc(sizeof(t_fdlist))))
-        return 0;
+		return (0);
 	node->fd = (unsigned int)fd;
-	node->buffer = NULL;
+	node->buffer = (char *)malloc(BUFF_SIZE + 1);
+	if (!node->buffer)
+	{
+		free(node);
+		return (0);
+	}
+	node->buffer[0] = '\0';
 	node->next = *list;
 	*list = node;
 	return (node);
 }
 
-int index_nlc(char * nlcplus, char * buff)
+void		swap_join_del(char **str, char **buff)
 {
-    return (nlcplus - buff);
+	char	*tmp;
+
+	tmp = *str;
+	*str = ft_strjoin(*str, *buff);
+	free(tmp);
 }
 
-
-void swap_join_del(char ** tmp, char ** str, char ** buff)
+char		*returnnl_storebuf(t_fdlist *current)
 {
-    *tmp = *str;
-    *str = ft_strjoin(*str, *buff);  
-    free(&tmp);
- 
+	char	*nlcplus;
+	char	*readtextnl;
+	char	*line;
+	ssize_t	size;
+
+	line = ft_strnew(0);
+	while (!(nlcplus = ft_strchr(current->buffer, '\n')))
+	{
+		swap_join_del(&line, &current->buffer);
+		current->buffer[0] = '\0';
+		size = read(current->fd, current->buffer, BUFF_SIZE);
+		if (size <= 0)
+			return (line);
+		current->buffer[size] = '\0';
+	}
+	readtextnl = ft_strsub(current->buffer, 0, nlcplus - current->buffer);
+	swap_join_del(&line, &readtextnl);
+	free(readtextnl);
+	ft_memmove(current->buffer, nlcplus + 1, 1 + ft_strlen(nlcplus + 1));
+	return (line);
 }
 
-char * returnnl_storebuf(t_fdlist *current, char * buffer)
+int			get_next_line(const int fd, char **line)
 {
-    char    *tmp;
-    char    *nlcplus;
-    char    *readtextnl;
-    char    *line; 
-    size_t  size;
-    
-    line = ft_strnew(0);
-    while (!(nlcplus = ft_strchr(buffer, '\n')))
-    {
-        tmp = line;
-        line = ft_strjoin(tmp, buffer);
-        free(tmp);
+	static t_fdlist		*head = NULL;
+	t_fdlist			*cur;
+	ssize_t				size;
 
-        if (!(size = read(current->fd, buffer, BUFF_SIZE)))
-        {
-            current->status = 1;
-            return line;
-        }
-        buffer[size] = '\0';
-    }
-        
-        readtextnl = ft_strsub(buffer, 0, (size_t)index_nlc(nlcplus, buffer));
-        
-        tmp = ft_strjoin(line, readtextnl);
-        free(line);
-        line = tmp;
-        
-        tmp = ft_strdup(buffer + index_nlc(nlcplus, buffer) + 1);
-        free(current->buffer);
-        current->buffer = tmp;
-
-        return (line);
-
+	if (line == NULL || fd < 0 || !(cur = find_or_create(&head, fd)))
+		return (-1);
+	if (cur->buffer[0] == '\0')
+	{
+		size = read(fd, cur->buffer, BUFF_SIZE);
+		if (size == -1)
+		{
+			delete_node(&head, fd);
+			return (-1);
+		}
+		if (size == 0)
+		{
+			delete_node(&head, fd);
+			return (0);
+		}
+		cur->buffer[size] = '\0';
+	}
+	*line = returnnl_storebuf(cur);
+	if (cur->buffer[0] == '\0')
+		delete_node(&head, fd);
+	return (1);
 }
-
-
-int get_next_line(const int fd, char **line)
-{
-   static t_fdlist *head = 0;
-
-    t_fdlist *cur;
-
-    //char buf[BUFF_SIZE + 1];
-
-    char * buf = (char*)malloc(sizeof(char) * BUFF_SIZE + 1);
-
-    size_t size;
-
-    if (!(cur = find_or_create(&head, fd)))
-        return -1;
-    if (line == NULL || fd < 0 || fd > 6450)
-        return -1;
-
-    if (cur->buffer && ft_strlen(cur->buffer))
-    {    
-        ft_strcpy(buf, cur->buffer);
-        // free(cur->buffer);
-    }
-    else
-    {
-        (size = read(fd, buf, BUFF_SIZE));
-       // printf("fd  -   %d\n buffer -   %s\n buf_size -     %d\n", fd, buf, BUFF_SIZE);
-        if (!size)
-        {
-            free(buf);
-            return 0;
-        }
-        buf[size] = '\0';
-    }
-    *line = returnnl_storebuf(cur, buf);
-
-
-    if (cur->status == 1)
-    {
-        free(buf);
-        return (0);
-    }
-    else 
-    {
-        free(buf);
-        return (1);
-    }
-}       
-
 
 #include "get_next_line.h"
 #include <fcntl.h>
@@ -142,7 +149,8 @@ int		main(int argc, char **argv)
 	}
 	if (argc == 2)
 		close(fd);
-            system("leaks a.out");
+    
+	//system("leaks a.out");
 
     return 0; 
 }
